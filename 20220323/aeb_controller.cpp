@@ -30,6 +30,13 @@ void odomCallback(const nav_msgs::Odometry& msg)
 	delta_y = y - old_y;
 	vx = delta_x * frequency_odom_pub;
 	vy = delta_y * frequency_odom_pub;
+
+	if (vx < 0)
+	{
+		vx *= -1;
+	}
+
+	aeb_collision_distance = 3.0 - (vx * (0.7 + 0.1) * 0.22778 * 2.5);
 	
 		if(x != old_x && old_x != 0)
 	    {
@@ -45,7 +52,7 @@ void odomCallback(const nav_msgs::Odometry& msg)
 	ROS_INFO("distance ( %.2f )", ds);
 	//ROS_INFO("%.2lf %.2lf", msg.pose.pose.position.x, msg.pose.pose.position.y);
 	
-	if(ds >= 3.0) // 3m
+	if(ds >= aeb_collision_distance) // 3m
 	{
 		ROS_INFO("AEB_Activation");
 		flag_AEB.data=true;
