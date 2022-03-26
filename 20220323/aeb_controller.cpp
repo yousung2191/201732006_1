@@ -37,7 +37,7 @@ void odomCallback(const nav_msgs::Odometry& msg)
 		{
 			ds += delta_x; // distance += delta_x
 		}
-		else if(delta_x < 0 && old_x != 0)
+		else if(delta_x < 0)
 		{
 			ds += -delta_x; // distance += delta_x
 		}
