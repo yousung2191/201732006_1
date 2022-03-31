@@ -8,7 +8,7 @@ struct Vector
 	float y;
 	float z;
 };
-//외적
+
 Vector ou(Vector a, Vector b) {
 	Vector vt;
 	vt.x = a.y * b.z - a.z * b.y;
@@ -17,7 +17,7 @@ Vector ou(Vector a, Vector b) {
 
 	return vt;
 }
-//내적
+
 float iu(Vector a, Vector b) {
 	return a.x * b.x + a.y + b.y + a.z * b.z;
 }
