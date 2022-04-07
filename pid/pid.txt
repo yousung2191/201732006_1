@@ -1,0 +1,109 @@
+const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
+int sensorValue = 0;        // value read from the pot
+int Steer_Angle_Measure = 0;        // value output to the PWM (analog out)
+#define NEURAL_ANGLE 0
+#define LEFT_STEER_ANGLE  -30
+#define RIGHT_STEER_ANGLE  30
+#define MOTOR1_PWM 9
+#define MOTOR1_ENA 10
+#define MOTOR1_ENB 11
+int Steering_Angle = NEURAL_ANGLE;
+/////////////////////////////////////// PID 제어 /////////////////////////////////////////////
+float Kp = 17.5;
+float Ki = 1.0;
+float Kd = 20.0; //PID 상수 설정, 실험에 따라 정해야 함 중요!
+double Setpoint, Input, Output; //PID 제어 변수
+double error, error_old;
+double error_s, error_d;
+int pwm_output;
+/////////////////////////////////////// PID 제어 /////////////////////////////////////////////
+void motor_control(int motor_pwm)
+{
+  if(motor_pwm >0) // forward
+  {
+    digitalWrite(MOTOR1_ENA, HIGH);
+    digitalWrite(MOTOR1_ENB, LOW);
+    analogWrite(MOTOR1_PWM,motor_pwm);
+  }
+  else if(motor_pwm <0) // backward
+  {
+    digitalWrite(MOTOR1_ENA, LOW);
+    digitalWrite(MOTOR1_ENB, HIGH);
+    analogWrite(MOTOR1_PWM,-motor_pwm);
+  }
+  else // stop
+  {
+    digitalWrite(MOTOR1_ENA, LOW);
+    digitalWrite(MOTOR1_ENB, LOW);
+    analogWrite(MOTOR1_PWM,0);
+  }
+}
+void PID_Control()
+{
+   error = Steering_Angle - Steer_Angle_Measure ;
+   error_s += error;
+   error_d = error - error_old;
+   error_s = (error_s >=  100) ?  100 : error_s;
+   error_s = (error_s <= -100) ? -100 : error_s;
+   pwm_output = Kp*error + Kd*error_d + Ki*error_s;
+   pwm_output = (pwm_output >=  255) ?  255 : pwm_output;
+   pwm_output = (pwm_output <= -255) ? -255 : pwm_output;
+   //if(pwm_output >=255) pwm_output = 255;
+   if(pwm_output <=-255) pwm_output = -255;
+   if(error==0)
+   {
+    motor_control(0);
+    error_s = 0;
+   }
+   else          motor_control(pwm_output);
+   error_old = error;
+}
+void steering_control()
+{
+  if(Steering_Angle<= LEFT_STEER_ANGLE + NEURAL_ANGLE)  Steering_Angle  = LEFT_STEER_ANGLE + NEURAL_ANGLE;
+  if(Steering_Angle>= RIGHT_STEER_ANGLE + NEURAL_ANGLE)  Steering_Angle = RIGHT_STEER_ANGLE + NEURAL_ANGLE;
+  PID_Control();
+  /*
+  if(Steer_Angle_Measure == 0)
+  {
+    motor_control(0);
+  }
+  else if(Steer_Angle_Measure > 0)
+  {
+    motor_control(100);
+  }
+  else
+  {
+    motor_control(-100);
+  }
+  */
+}
+void setup() {
+  // initialize serial communications at 9600 bps:
+  Serial.begin(9600);
+  pinMode(MOTOR_DIR, OUTPUT);  // L298 motor control direction
+  pinMode(MOTOR_PWM, OUTPUT);  // L298 motor control PWM
+  error = error_s = error_d = error_old = 0.0;
+  pwm_output = 0;
+}
+void loop() {
+  // read the analog in value:
+  sensorValue = analogRead(analogInPin);
+  // map it to the range of the analog out:
+  Steer_Angle_Measure = map(sensorValue, 110, 933, LEFT_STEER_ANGLE, RIGHT_STEER_ANGLE);
+  // change the analog out value:
+   // print the results to the Serial Monitor:
+  Serial.print("sensor = ");
+  Serial.print(sensorValue);
+  Serial.print("\t output = ");
+  Serial.print(Steer_Angle_Measure);
+  Serial.print("\t error = ");
+  Serial.print(error);
+  Serial.print("\t pwm output = ");
+  Serial.println(pwm_output);
+  Steering_Angle = 15;
+  steering_control();
+  // wait 2 milliseconds before the next loop for the analog-to-digital
+  // converter to settle after the last reading:
+  delay(2);
+}
